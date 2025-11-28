@@ -4,11 +4,11 @@
 #include <cstring>
 using namespace std;
 
-#define BLOCK_SIZE      1024
-#define DISK_SIZE       64 * 1024 * 1024
-#define MAX_ENTRIES     128
-#define FAT_FREE        -1
-#define FAT_END         -2
+#define BLOCK_SIZE 1024
+#define DISK_SIZE 64 * 1024 * 1024
+#define MAX_ENTRIES 128
+#define FAT_FREE -1
+#define FAT_END -2
 
 const int TOTAL_BLOCKS = DISK_SIZE / BLOCK_SIZE;
 
@@ -43,8 +43,8 @@ void formatDisk() {
     disk.write("", 1);
     disk.close();
 
-    int FAT_SIZE_BYTES  = TOTAL_BLOCKS * sizeof(int);
-    int FAT_BLOCKS      = (FAT_SIZE_BYTES + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    int FAT_SIZE_BYTES = TOTAL_BLOCKS * sizeof(int);
+    int FAT_BLOCKS = (FAT_SIZE_BYTES + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
     cout << "Total Blocks: " << TOTAL_BLOCKS << "\n";
     cout << "FAT Blocks:   " << FAT_BLOCKS << "\n";
