@@ -4,8 +4,8 @@
 #include <cstring>
 using namespace std;
 
-#define BLOCK_SIZE      1024                 // 1 KB
-#define DISK_SIZE       64 * 1024 * 1024     // 64 MB
+#define BLOCK_SIZE      1024
+#define DISK_SIZE       64 * 1024 * 1024
 #define MAX_ENTRIES     128
 #define FAT_FREE        -1
 #define FAT_END         -2
@@ -51,14 +51,11 @@ void formatDisk() {
 
     vector<int> FAT(TOTAL_BLOCKS);
 
-    // Initialize FAT entries
     for (int i = 0; i < TOTAL_BLOCKS; i++)
         FAT[i] = FAT_FREE;
 
-    // Mark FAT blocks as used (reserved)
     for (int i = 0; i < FAT_BLOCKS; i++)
         FAT[i] = FAT_END;
-
 
     char buffer[BLOCK_SIZE];
 
