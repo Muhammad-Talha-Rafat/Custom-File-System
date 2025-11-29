@@ -1,0 +1,32 @@
+ls
+ls folder
+
+mkf file.txt
+mkf file.txt file.txt
+
+mkd folder
+mkd folder folder
+
+cd
+cd ../
+cd folder
+
+rmf file.txt
+rmf file.txt file.txt
+
+rmd folder
+rmd folder folder
+
+wr "text" > file.txt
+wr "text" >> file.txt
+
+rd file.txt
+
+tr file.txt
+tr file.txt file.txt
+tr folder
+tr folder folder
+
+format
+clear
+exit

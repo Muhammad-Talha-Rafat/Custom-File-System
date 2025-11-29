@@ -1,3 +1,3 @@
 @echo off
-g++ *.cpp -o main
+g++ main.cpp -o main
 clear && main

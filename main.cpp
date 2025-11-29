@@ -2,7 +2,11 @@
 #include <fstream>
 #include <vector>
 #include <cstring>
+
 using namespace std;
+
+#include "resources\user.h"
+#include "resources\command.h"
 
 #define BLOCK_SIZE 1024
 #define DISK_SIZE 64 * 1024 * 1024
@@ -62,7 +66,7 @@ void formatDisk() {
     int cursor = 0;
     for (int i = 0; i < FAT_BLOCKS; i++) {
         memset(buffer, 0, BLOCK_SIZE);
-        memcpy(buffer, &FAT[0] + (i * BLOCK_SIZE / 4), BLOCK_SIZE);
+        memcpy(buffer, FAT.data() + (i * BLOCK_SIZE / sizeof(int)), BLOCK_SIZE);
         WriteBlock(1 + i, buffer);
         cursor += BLOCK_SIZE;
     }
@@ -93,11 +97,32 @@ void formatDisk() {
 }
 
 
+USER noob;
+
+
 int main() {
     formatDisk();
+
     while (true) {
-        string name;
-        cin >> name;
-        if (name == "exit") break;
+
+        string cmd;
+        string noob_location = noob.current_directory.string().substr(37);
+        cout << "\033[0;32m" << noob_location << " $ " << "\033[0m";
+        getline(cin, cmd);
+
+        if (cmd == "exit") exit(0);
+        else if (cmd == "clear") system("clear");
+        else try {
+            auto command = COMMAND::dispatch(cmd);
+            command->validate(cmd);
+            command->execute();
+        }
+        catch (const exception& e) {
+            cerr << "\033[0;31m" << e.what() << "\033[0m" << endl;
+            return false;
+        }
+
+        
+
     }
 }
