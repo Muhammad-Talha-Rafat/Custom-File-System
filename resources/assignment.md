@@ -15,15 +15,15 @@ with FAT managing block allocation.
 
 ### **1. Basic Settings**
 
-  Setting          Value
-|-----------------|-------------------|
+| Setting         | Value             |
+| --------------- | ----------------- |
 | Directory Size  | 128 entries       |
 | Max File Name   | 64 bytes          |
 | Max File Size   | 128 blocks        |
 | Block Size      | 1KB               |
 | Disk Size       | 64MB              |
 | Documentation   | Included in code  |
----------------------------------------
+
 
 ## **2. Required Operations**
 
