@@ -1,3 +1,3 @@
 @echo off
-g++ main.cpp -o main
+g++ *.cpp resources/*.cpp -o main
 clear && main

@@ -5,40 +5,7 @@
 
 using namespace std;
 
-#include "resources\user.h"
-#include "resources\command.h"
-
-#define BLOCK_SIZE 1024
-#define DISK_SIZE 64 * 1024 * 1024
-#define MAX_ENTRIES 128
-#define FAT_FREE -1
-#define FAT_END -2
-
-const int TOTAL_BLOCKS = DISK_SIZE / BLOCK_SIZE;
-
-struct ENTRY {
-    char name[64];
-    bool isDirectory;
-    int  start;
-    int  size;
-    bool inUse;
-};
-
-
-void WriteBlock(int block_num, char* buffer) {
-    fstream disk("playground.bin", ios::binary | ios::out);
-    disk.seekp(block_num * BLOCK_SIZE);
-    disk.write(buffer, BLOCK_SIZE);
-    disk.close();
-}
-
-void ReadBlock(int block_num, char* buffer) {
-    fstream disk("playground.bin", ios::binary | ios::in);
-    disk.seekg(block_num * BLOCK_SIZE);
-    disk.read(buffer, BLOCK_SIZE);
-    disk.close();
-}
-
+#include "resources/def.h"
 
 void formatDisk() {
 
@@ -97,6 +64,10 @@ void formatDisk() {
 }
 
 
+#include "resources/user.h"
+#include "resources/command.h"
+
+
 USER noob;
 
 
@@ -120,10 +91,7 @@ int main() {
         }
         catch (const exception& e) {
             cerr << "\033[0;31m" << e.what() << "\033[0m" << endl;
-            return false;
-        }
-
-        
+        }        
 
     }
 }

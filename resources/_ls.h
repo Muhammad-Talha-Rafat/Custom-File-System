@@ -1,12 +1,11 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
+#include <iostream>
+#include "command.h"
+
 using namespace std;
 
-#include "command.h"
+
 
 class _ls : public COMMAND
 {
@@ -29,7 +28,7 @@ public:
 
         targetDir = word;
 
-        if (!regex_match(targetDir.string(), regex(path_dir)))
+        if (!regex_match(targetDir.string(), regex(path_dir)) && !regex_match(targetDir.string(), regex("playground.bin")))
             throw invalid_argument(keyword + ": invalid directory name '" + targetDir.string() + "'");
 
         if (ss >> word)
@@ -39,21 +38,32 @@ public:
     }
 
     void execute() override {
-        filesystem::path dirPath;
+        char buffer[BLOCK_SIZE];
+        ENTRY dir[MAX_ENTRIES];
 
-        dirPath = get_location(targetDir);
+        int entriesPerBlock = BLOCK_SIZE / sizeof(ENTRY);
+        int totalRead = 0;
 
-        if (!filesystem::exists(dirPath))
-            throw runtime_error(keyword + ": directory does not exist: " + targetDir.string());
+        for (int i = 0; i < DIR_BLOCKS && totalRead < MAX_ENTRIES; i++) {
+            ReadBlock(DIR_START_BLOCK + i, buffer);
 
-        if (!filesystem::is_directory(dirPath))
-            throw runtime_error(keyword + ": " + dirPath.filename().string() + ": not a directory");
+            int copyCount = min(entriesPerBlock, MAX_ENTRIES - totalRead);
+            memcpy(&dir[totalRead], buffer, copyCount * sizeof(ENTRY));
+            totalRead += copyCount;
+        }
 
-        for (auto& entry : filesystem::directory_iterator(dirPath)) {
-            cout << entry.path().filename().string();
-            if (filesystem::is_directory(entry))
-                cout << '/';
-            cout << endl;
+        bool anyPrinted = false;
+        for (int i = 0; i < MAX_ENTRIES; i++) {
+            if (dir[i].inUse) {
+                cout << dir[i].name;
+                if (dir[i].isDirectory) cout << '/';
+                cout << '\n';
+                anyPrinted = true;
+            }
+        }
+
+        if (!anyPrinted) {
+            cout << "(empty directory)" << endl;
         }
     }
 };

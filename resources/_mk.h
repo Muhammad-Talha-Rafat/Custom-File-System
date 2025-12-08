@@ -1,12 +1,10 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
-using namespace std;
-
+#include <iostream>
+#include <cstring>
 #include "command.h"
+
+using namespace std;
 
 
 
@@ -55,20 +53,52 @@ public:
 
     void execute() override
     {
-        for (const auto& name : names)
-        {
-            fs::path fullPath = get_location(name);
+        char buffer[BLOCK_SIZE];
+        ENTRY dir[MAX_ENTRIES];
 
-            if (isFile) {
-                if (fs::exists(fullPath))
-                    throw runtime_error(keyword + "File already exists: " + name.string());
-                ofstream file(fullPath);
+        int entriesPerBlock = BLOCK_SIZE / sizeof(ENTRY);
+        int totalRead = 0;
+        for (int i = 0; i < DIR_BLOCKS && totalRead < MAX_ENTRIES; i++) {
+            ReadBlock(DIR_START_BLOCK + i, buffer);
+            int copyCount = min(entriesPerBlock, MAX_ENTRIES - totalRead);
+            memcpy(&dir[totalRead], buffer, copyCount * sizeof(ENTRY));
+            totalRead += copyCount;
+        }
+
+        for (const auto& name : names) {
+            bool exists = false;
+            int freeIndex = -1;
+
+            for (int i = 0; i < MAX_ENTRIES; i++) {
+                if (dir[i].inUse && name == dir[i].name) {
+                    exists = true;
+                    break;
+                }
+                if (!dir[i].inUse && freeIndex == -1)
+                    freeIndex = i;
             }
-            else {
-                if (fs::exists(fullPath))
-                    throw runtime_error(keyword + "Directory already exists: " + name.string());
-                fs::create_directory(fullPath);
-            }
+
+            if (exists)
+                throw runtime_error(keyword + ": already exists: " + name.string());
+
+            if (freeIndex == -1)
+                throw runtime_error(keyword + ": no free directory entry");
+
+            dir[freeIndex].inUse = true;
+            dir[freeIndex].isDirectory = !isFile;
+            dir[freeIndex].size = 0;
+            dir[freeIndex].start = -1;
+            strncpy(dir[freeIndex].name, name.string().c_str(), sizeof(dir[freeIndex].name) - 1);
+            dir[freeIndex].name[sizeof(dir[freeIndex].name) - 1] = '\0';
+        }
+
+        int written = 0;
+        for (int i = 0; i < DIR_BLOCKS && written < MAX_ENTRIES; i++) {
+            memset(buffer, 0, BLOCK_SIZE);
+            int copyCount = min(entriesPerBlock, MAX_ENTRIES - written);
+            memcpy(buffer, &dir[written], copyCount * sizeof(ENTRY));
+            WriteBlock(DIR_START_BLOCK + i, buffer);
+            written += copyCount;
         }
     }
 };

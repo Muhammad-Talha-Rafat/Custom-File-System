@@ -1,12 +1,10 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
+#include <iostream>
+#include "command.h"
+
 using namespace std;
 
-#include "command.h"
 
 
 class _tr : public COMMAND

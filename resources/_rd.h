@@ -1,12 +1,9 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
-using namespace std;
-
+#include <iostream>
 #include "command.h"
+
+using namespace std;
 
 
 
@@ -21,9 +18,9 @@ public:
     _rd() { keyword = "rd"; }
 
     bool validate(const string& cmd) override {
+
         stringstream ss(cmd);
         string token;
-
         ss >> token;
 
         if (!(ss >> token))

@@ -1,12 +1,9 @@
 #pragma once
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include <sstream>
-using namespace std;
-
+#include <iostream>
 #include "command.h"
+
+using namespace std;
 
 
 
