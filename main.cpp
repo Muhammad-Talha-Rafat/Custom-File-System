@@ -112,6 +112,7 @@ int main() {
 
         if (cmd == "exit") exit(0);
         else if (cmd == "clear") system("clear");
+        else if (cmd == "format") formatDisk();
         else try {
             auto command = COMMAND::dispatch(cmd);
             command->validate(cmd);
