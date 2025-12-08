@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <cstring>
 #include "command.h"
 
 using namespace std;
@@ -12,7 +13,7 @@ class _wr : public COMMAND
 private:
 
     string text;
-    fs::path filename;
+    fs::path fileName;
     bool redirection = false;
 
 public:
@@ -37,28 +38,69 @@ public:
         else if (op == ">>") redirection = true;
         else throw invalid_argument(keyword + ": missing redirection operator");
 
-        ss >> filename;
+        ss >> fileName;
 
-        if (!regex_match(filename.string(), regex(path_file)))
-            throw invalid_argument(keyword + ": invalid file name '" + filename.string() + "'");
+        if (!regex_match(fileName.string(), regex(path_file)))
+            throw invalid_argument(keyword + ": invalid file name '" + fileName.string() + "'");
 
         return true;
     }
 
+        void execute() override
+    {
+        char buffer[BLOCK_SIZE];
+        ENTRY dir[MAX_ENTRIES];
 
-    void execute() override {
-        fs::path fullPath = get_location(filename);
+        // Read all directory entries
+        int entriesPerBlock = BLOCK_SIZE / sizeof(ENTRY);
+        int totalRead = 0;
+        for (int i = 0; i < DIR_BLOCKS && totalRead < MAX_ENTRIES; i++) {
+            ReadBlock(DIR_START_BLOCK + i, buffer);
+            int copyCount = min(entriesPerBlock, MAX_ENTRIES - totalRead);
+            memcpy(&dir[totalRead], buffer, copyCount * sizeof(ENTRY));
+            totalRead += copyCount;
+        }
 
-        if (!fs::exists(fullPath))
-            throw runtime_error(keyword + ": file does not exist: " + filename.string());
+        // Find the file entry
+        ENTRY* fileEntry = nullptr;
+        for (int i = 0; i < MAX_ENTRIES; i++) {
+            if (dir[i].inUse && !dir[i].isDirectory && fileName == dir[i].name) {
+                fileEntry = &dir[i];
+                break;
+            }
+        }
+        if (!fileEntry)
+            throw runtime_error(keyword + ": file not found: " + fileName.string());
 
-        ios_base::openmode mode = ios::out;
-        if (redirection) mode |= ios::app;
-        else mode |= ios::trunc;
+        // Allocate start block if empty
+        if (fileEntry->start == -1) fileEntry->start = FAT_START_BLOCK + DIR_BLOCKS;
 
-        ofstream file(fullPath, mode);
+        // Calculate write offset
+        int startBlock = fileEntry->start;
+        int writeOffset = redirection ? fileEntry->size : 0;
 
-        file << text;
-        file.close();
+        // Open disk
+        fstream disk("playground.bin", ios::binary | ios::in | ios::out);
+        if (!disk.is_open())
+            throw runtime_error(keyword + ": failed to open disk");
+
+        // Seek to the file start
+        disk.seekp(startBlock * BLOCK_SIZE + writeOffset);
+        disk.write(text.c_str(), text.size());
+        disk.close();
+
+        // Update file size
+        fileEntry->size = redirection ? fileEntry->size + text.size() : text.size();
+
+        // Write back directory entries
+        int written = 0;
+        for (int i = 0; i < DIR_BLOCKS && written < MAX_ENTRIES; i++) {
+            memset(buffer, 0, BLOCK_SIZE);
+            int copyCount = min(entriesPerBlock, MAX_ENTRIES - written);
+            memcpy(buffer, &dir[written], copyCount * sizeof(ENTRY));
+            WriteBlock(DIR_START_BLOCK + i, buffer);
+            written += copyCount;
+        }
     }
+    
 };

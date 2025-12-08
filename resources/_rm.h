@@ -1,17 +1,18 @@
 #pragma once
 
 #include <iostream>
-#include "command.h"
+#include <cstring>
 
 using namespace std;
 
+#include "command.h"
 
 
 class _rm : public COMMAND
 {
 private:
 
-    bool removeFiles = false;
+    bool isFile = false;
     vector<fs::path> targets;
 
 public:
@@ -25,12 +26,12 @@ public:
         ss >> word;
 
         ss >> word;
-        if (word == "-f") removeFiles = true;
-        else if (word == "-d") removeFiles = false;
+        if (word == "-f") isFile = true;
+        else if (word == "-d") isFile = false;
         else throw invalid_argument(keyword + ": invalid flag usage [" + word + "]");
 
         while (ss >> word) {
-            if (removeFiles) {
+            if (isFile) {
                 if (!regex_match(word, regex(path_file)))
                     throw invalid_argument(keyword + ": invalid file name '" + word + "'");
             }
@@ -42,18 +43,47 @@ public:
         return true;
     }
 
-    void execute() override {
+    void execute() override
+    {
+        char buffer[BLOCK_SIZE];
+        ENTRY dir[MAX_ENTRIES];
+
+        int entriesPerBlock = BLOCK_SIZE / sizeof(ENTRY);
+        int totalRead = 0;
+        for (int i = 0; i < DIR_BLOCKS && totalRead < MAX_ENTRIES; i++) {
+            ReadBlock(DIR_START_BLOCK + i, buffer);
+            int copyCount = min(entriesPerBlock, MAX_ENTRIES - totalRead);
+            memcpy(&dir[totalRead], buffer, copyCount * sizeof(ENTRY));
+            totalRead += copyCount;
+        }
 
         for (const auto& name : targets) {
-            filesystem::path fullPath = get_location(name);
+            bool found = false;
 
-            if (!fs::exists(fullPath))
-                throw runtime_error(keyword + ": file does not exist: " + name.string());
+            for (int i = 0; i < MAX_ENTRIES; i++) {
+                if (dir[i].inUse && name == dir[i].name) {
+                    if (isFile && dir[i].isDirectory)
+                        throw runtime_error(keyword + ": cannot remove directory with -f: " + name.string());
+                    if (!isFile && !dir[i].isDirectory)
+                        throw runtime_error(keyword + ": cannot remove file with -d: " + name.string());
 
-            if (removeFiles)
-                filesystem::remove(fullPath);
-            else if (filesystem::is_directory(fullPath))
-                filesystem::remove_all(fullPath);
+                    dir[i].inUse = false; // mark as removed
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+                throw runtime_error(keyword + ": not found: " + name.string());
+        }
+
+        int written = 0;
+        for (int i = 0; i < DIR_BLOCKS && written < MAX_ENTRIES; i++) {
+            memset(buffer, 0, BLOCK_SIZE);
+            int copyCount = min(entriesPerBlock, MAX_ENTRIES - written);
+            memcpy(buffer, &dir[written], copyCount * sizeof(ENTRY));
+            WriteBlock(DIR_START_BLOCK + i, buffer);
+            written += copyCount;
         }
     }
 };

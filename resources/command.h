@@ -7,6 +7,8 @@
 #include <sstream>
 #include <regex>
 
+#include "def.h"
+
 using namespace std;
 
 namespace fs = filesystem;
