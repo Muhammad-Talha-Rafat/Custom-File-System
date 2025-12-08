@@ -42,7 +42,7 @@ public:
         char buffer[BLOCK_SIZE];
         ENTRY dir[MAX_ENTRIES];
 
-        // Read directory entries
+        // Read all directory entries from the FAT/directory blocks
         int entriesPerBlock = BLOCK_SIZE / sizeof(ENTRY);
         int totalRead = 0;
         for (int i = 0; i < DIR_BLOCKS && totalRead < MAX_ENTRIES; i++) {
@@ -52,7 +52,7 @@ public:
             totalRead += copyCount;
         }
 
-        // Find the file entry
+        // Locate the file in the directory
         ENTRY* fileEntry = nullptr;
         for (int i = 0; i < MAX_ENTRIES; i++) {
             if (dir[i].inUse && !dir[i].isDirectory && filePath == dir[i].name) {
@@ -60,16 +60,21 @@ public:
                 break;
             }
         }
+
         if (!fileEntry)
             throw runtime_error(keyword + ": file not found: " + filePath.string());
 
+        // If empty file, just print a notice
         if (fileEntry->start == -1 || fileEntry->size == 0) {
             cout << "[empty file]" << endl;
             return;
         }
 
-        // Read the file content
+        // Read the file content from playground.bin
         fstream disk("playground.bin", ios::binary | ios::in);
+        if (!disk.is_open())
+            throw runtime_error(keyword + ": failed to open disk");
+
         disk.seekg(fileEntry->start * BLOCK_SIZE);
         vector<char> fileContent(fileEntry->size);
         disk.read(fileContent.data(), fileEntry->size);
